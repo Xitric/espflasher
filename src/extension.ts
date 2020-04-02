@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as configuration from './configuration'
+import * as flasher from './flasher'
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -10,8 +11,7 @@ export function activate(context: vscode.ExtensionContext) {
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand('extension.flashFiles', async () => {
-		let conf = await configuration.getConfiguration()
-		vscode.window.showWarningMessage('Flash ' + conf?.port);
+		await flasher.flashWorkspace();
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand('extension.clean', () => {
