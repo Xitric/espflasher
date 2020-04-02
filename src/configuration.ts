@@ -75,8 +75,7 @@ async function getPortFromUser(deviceType: string): Promise<string | undefined> 
 }
 
 async function makeConfigFile(path: string, deviceType: string, port: string): Promise<void> {
-    const normalizedDeviceType = deviceType.replace(":", "")
-    const device = Device[normalizedDeviceType as keyof typeof Device]
+    const device = toDevice(deviceType)!
     const configTemplate: EspConfiguration = {
         port: port,
         device: device,
@@ -99,12 +98,23 @@ function getPortPlaceholder(): string {
     }
 }
 
+function toDevice(deviceType: string): Device | undefined {
+    const normalizedDeviceType = deviceType.replace(":", "")
+    return Device[normalizedDeviceType as keyof typeof Device]
+}
+
 export async function getConfiguration(): Promise<EspConfiguration | undefined> {
     const configFilePath = getConfigFilePath()
 
     if (configFilePath) {
         const data = await fs.readFile(configFilePath)
-        return JSON.parse(data.toString())
+        const config = JSON.parse(data.toString())
+
+        if (toDevice(config.device)) {
+            return config
+        } else {
+            vscode.window.showErrorMessage(`Unknown device type ${config.device}`)
+        }
     }
 
     return undefined
