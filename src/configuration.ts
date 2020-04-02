@@ -2,8 +2,16 @@ import * as vscode from 'vscode';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 
+export enum Device {
+    ESP32 = "ESP32",
+    ESP8266 = "ESP8266",
+    Pyboard = "Pyboard",
+    Microbit = "Micro:bit"
+}
+
 export interface EspConfiguration {
-    port: string | undefined
+    port: string
+    device: Device
     ignore: string[]
 }
 
@@ -23,9 +31,20 @@ export async function initialize(): Promise<void> {
             await fs.access(configFilePath)
             vscode.window.showInformationMessage('The current workspace has already been initialized');
         } catch (error) {
-            const port = await getConfigOptions();
+            const deviceType = await getDeviceTypeFromUser();
+            if (!deviceType) {
+                vscode.window.showErrorMessage("You must select a device type to initialize the workspace");
+                return
+            }
+
+            const port = await getPortFromUser(deviceType);
+            if (!port) {
+                vscode.window.showErrorMessage("You must specify a serial port to initialize the workspace");
+                return
+            }
+
             try {
-                await makeConfigFile(configFilePath, port);
+                await makeConfigFile(configFilePath, deviceType, port);
                 vscode.window.showInformationMessage('Successfully initialized the current workspace');
             } catch (err) {
                 vscode.window.showErrorMessage('Error initializing workspace: ' + err);
@@ -34,20 +53,39 @@ export async function initialize(): Promise<void> {
     }
 }
 
-async function getConfigOptions(): Promise<string | undefined> {
+async function getDeviceTypeFromUser(): Promise<string | undefined> {
+    const inputOptions: vscode.QuickPickOptions = {
+        ignoreFocusOut: true,
+        canPickMany: false,
+        placeHolder: "Please select your device type"
+    }
+    const deviceTypes = Object.values(Device).map(device => device.valueOf())
+    
+    return await vscode.window.showQuickPick(deviceTypes, inputOptions)
+}
+
+async function getPortFromUser(deviceType: string): Promise<string | undefined> {
     const inputOptions: vscode.InputBoxOptions = {
         ignoreFocusOut: true,
         value: getPortPlaceholder(),
-        prompt: 'Specify the port connected to the ESP'
+        prompt: `Specify the port connected to the ${deviceType}`
     }
     
     return await vscode.window.showInputBox(inputOptions);
 }
 
-async function makeConfigFile(path: string, port?: string): Promise<void> {
+async function makeConfigFile(path: string, deviceType: string, port: string): Promise<void> {
+    const normalizedDeviceType = deviceType.replace(":", "")
+    const device = Device[normalizedDeviceType as keyof typeof Device]
     const configTemplate: EspConfiguration = {
-        port: port || getPortPlaceholder(),
-        ignore: []
+        port: port,
+        device: device,
+        ignore: [
+            "**/.*",
+            "**/*.pyi",
+            "**/LICENSE*",
+            "__pycache__*"
+        ]
     }
     
     await fs.writeFile(path, JSON.stringify(configTemplate, null, '\t'));
