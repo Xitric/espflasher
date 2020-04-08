@@ -20,7 +20,7 @@ function commandPrefix(port: string) {
 
 function flashFile(file: string, device: Device) {
     const dirPrefix = getDirectoryPrefix(device)
-    return `cp ${file} ${dirPrefix}${file};ls /${dirPrefix}`
+    return `cp ${file} ${dirPrefix}${file};ls ${dirPrefix}0`
 }
 
 function getDirectoryPrefix(device: Device) {

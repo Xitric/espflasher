@@ -22,11 +22,10 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showWarningMessage('Reboot');
 	}));
 
-	// Create .espconfig if missing
-	// Read config from .espconfig
 	// Create tree view with files from esp
 	// Support flashing + rebooting
 	// Support rebooting
+	// Support flashing firmware with esptool!!!
 }
 
 export function deactivate() {
