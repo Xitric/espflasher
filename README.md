@@ -1,65 +1,50 @@
-# espflasher README
+# ESP Flasher
 
-This is the README for your extension "espflasher". After writing up a brief description, we recommend including the following sections.
+A collection of simple commands for interfacing with a MicroPython ESP device through VSCode. Unlike other, similar extensions, this extension has no external dependencies.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+Currently, the following features are supported:
+- Initialize the workspace with a settings file for controlling this extension.
+- Flashing the current workspace to an ESP.
+- Rebooting an ESP.
 
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+Planned future features include:
+- Cleaning all files installed on the ESP that are not also present in the workspace.
+- Browsing the ESP file system through VSCode.
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+This extension is configured on a per-directory basis using a special `.espconfig.json` file. This file must be present in the root of the workspace for the extension to work. To create the file, use the command:
 
-For example:
+```
+MicroPython ESP: Initialize
+```
 
-This extension contributes the following settings:
+The anatomy of the settings file is as such, and is described below:
 
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something
+```json
+{
+	"port": "COM4",
+	"device": "ESP32",
+	"ignore": [
+		"**/.*",
+		"**/*.pyi",
+		"**/LICENSE*",
+		"__pycache__*"
+	]
+}
+```
 
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- `port`: The port on your computer to which the ESP is connected.
+- `device`: The device type. This is required since different devices work slightly differently.
+- `ignore`: A list of `glob` patterns describing files in the workspace that should be ignored when flashing to the ESP.
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
-
 ### 1.0.0
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
------------------------------------------------------------------------------------------------------------
-
-## Working with Markdown
-
-**Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (macOS) to see a list of Markdown snippets
-
-### For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+Initial release supporting the following commands:
+- Initializing the workspace with an `.espconfig.json` file.
+- Flashing the workspace to an ESP32.
+- Rebooting the ESP32.
