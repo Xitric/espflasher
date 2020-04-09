@@ -10,25 +10,39 @@ import { promises as fs, constants as fsconstants, read } from 'fs';
 export type MessageCallback = (message: string) => void
 
 const readyPattern = ">>> $"
+const errorPattern = "Error"
+
+export async function reboot(port: string, device: Device, callback: MessageCallback) {
+    const serial = await AsyncSerial.open(port, { baudRate: 115200 })
+    try {
+        await terminateCurrentProgram(serial)
+        await softReboot(serial, callback)
+    } finally {
+        await serial.close()
+    }
+}
 
 export async function flashFiles(files: string[], port: string, device: Device, callback: MessageCallback) {
     const serial = await AsyncSerial.open(port, { baudRate: 115200 })
-    await terminateCurrentProgram(serial)
+    try {
+        await terminateCurrentProgram(serial)
 
-    let previousDirectory = "."
-    for (const file of files) {
-        const currentDirectory = path.dirname(file)
+        let previousDirectory = "."
+        for (const file of files) {
+            const currentDirectory = path.dirname(file)
 
-        if (currentDirectory != previousDirectory) {
-            await makeDirectory(serial, currentDirectory, callback)
-            previousDirectory = currentDirectory
+            if (currentDirectory != previousDirectory) {
+                await makeDirectory(serial, currentDirectory, callback)
+                previousDirectory = currentDirectory
+            }
+
+            await flashFile(serial, file, callback)
         }
 
-        await flashFile(serial, file, callback)
+        await softReboot(serial, callback)
+    } finally {
+        await serial.close()
     }
-
-    await softReboot(serial, callback)
-    await serial.close()
 }
 
 async function flashFile(serial: AsyncSerial, file: string, callback: MessageCallback) {
@@ -90,6 +104,8 @@ async function waitFor(serial: AsyncSerial, pattern: string) {
 
         if (data?.match(pattern)) {
             break
+        } else if (data?.match(errorPattern)) {
+            throw new Error(data)
         }
     }
 }

@@ -18,8 +18,8 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showWarningMessage('Clean');
 	}));
 
-	context.subscriptions.push(vscode.commands.registerCommand('extension.softReboot', () => {
-		vscode.window.showWarningMessage('Reboot');
+	context.subscriptions.push(vscode.commands.registerCommand('extension.softReboot', async () => {
+		await flasher.reboot()
 	}));
 
 	// Create tree view with files from esp

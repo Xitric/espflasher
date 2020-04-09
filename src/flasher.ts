@@ -5,6 +5,21 @@ import * as serial from './serial-manager'
 
 const VISIBLE_TERMINAL_NAME = 'flash files'
 
+export async function reboot() {
+    const conf = await configuration.getConfiguration()
+    if (! conf) {
+        vscode.window.showErrorMessage('Error reading .espconfig.json from the current workspace. Have you remembered to initialize it with \'MicroPython ESP: Initialize\'?')
+        return
+    }
+
+    const terminal = getFlasherTerminal()
+    terminal.show()
+
+    await serial.reboot(conf.port, conf.device, message => {
+        terminal.sendText(`echo '${message}'`)
+    })
+}
+
 export async function flashWorkspace() {
     const conf = await configuration.getConfiguration()
     if (! conf) {
@@ -18,9 +33,17 @@ export async function flashWorkspace() {
     vscode.window.showInformationMessage(`Flashing ${filesToFlash.length} files to device on port ${conf.port}`)
     const terminal = getFlasherTerminal()
     terminal.show()
-    serial.flashFiles(filesToFlash, conf.port, conf.device, message => {
-        terminal.sendText(`echo '${message}'`)
-    })
+    
+    try {
+        await serial.flashFiles(filesToFlash, conf.port, conf.device, message => {
+            terminal.sendText(`echo '${message}'`)
+        })
+    } catch (error) {
+        vscode.window.showErrorMessage(`An error occurred while flashing the workspace: ${error}`)
+        return
+    }
+
+    vscode.window.showInformationMessage('Successfully flashed the workspace')
 }
 
 async function collectFiles(ignore: string[]): Promise<string[]> {
