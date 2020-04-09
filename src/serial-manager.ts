@@ -12,6 +12,8 @@ export type MessageCallback = (message: string) => void
 const readyPattern = ">>> $"
 const errorPattern = "Error"
 
+const retryCount = 3
+
 export async function reboot(port: string, device: Device, callback: MessageCallback) {
     const serial = await AsyncSerial.open(port, { baudRate: 115200 })
     try {
@@ -32,16 +34,27 @@ export async function flashFiles(files: string[], port: string, device: Device, 
             const currentDirectory = path.dirname(file)
 
             if (currentDirectory != previousDirectory) {
-                await makeDirectory(serial, currentDirectory, callback)
+                await tryMakeDirectory(serial, currentDirectory, callback)
                 previousDirectory = currentDirectory
             }
 
-            await flashFile(serial, file, callback)
+            await tryFlashFile(serial, file, callback)
         }
 
         await softReboot(serial, callback)
     } finally {
         await serial.close()
+    }
+}
+
+async function tryFlashFile(serial: AsyncSerial, file: string, callback: MessageCallback) {
+    for (let i = 0; i < retryCount; i++) {
+        try {
+            await flashFile(serial, file, callback)
+            return
+        } catch (error) {
+            if (i == retryCount - 1) throw error
+        }
     }
 }
 
@@ -75,6 +88,17 @@ async function flashFile(serial: AsyncSerial, file: string, callback: MessageCal
     await sendStatement(serial, "file.close()")
 }
 
+async function tryMakeDirectory(serial: AsyncSerial, directory: string, callback: MessageCallback) {
+    for (let i = 0; i < retryCount; i++) {
+        try {
+            await makeDirectory(serial, directory, callback)
+            return
+        } catch (error) {
+            if (i == retryCount - 1) throw error
+        }
+    }
+}
+
 async function makeDirectory(serial: AsyncSerial, directory: string, callback: MessageCallback) {
     callback(`Making directory ${directory}`)
     const directories = directory.split(/[/\\]/)
@@ -89,22 +113,26 @@ async function makeDirectory(serial: AsyncSerial, directory: string, callback: M
 }
 
 async function terminateCurrentProgram(serial: AsyncSerial) {
-    while (true) {
+    for (let i = 0; i < 10; i++) {
         await serial.write('\x03', true)
-        const data = await serial.readLine()
+        const data = await serial.readLine(5000)
         if (data?.match(readyPattern)) {
-            break
+            return
         }
     }
+
+    throw new Error('Unable to terminate running program after 10 attempts')
 }
 
 async function waitFor(serial: AsyncSerial, pattern: string) {
     while (true) {
-        const data = await serial.readLine()
+        const data = await serial.readLine(5000)
 
-        if (data?.match(pattern)) {
+        if (! data) {
+            throw new Error('Lost connection to the device')
+        } else if (data.match(pattern)) {
             break
-        } else if (data?.match(errorPattern)) {
+        } else if (data.match(errorPattern)) {
             throw new Error(data)
         }
     }

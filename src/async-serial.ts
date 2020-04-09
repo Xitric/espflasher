@@ -83,7 +83,7 @@ export class AsyncSerial {
         })
     }
 
-    async readLine(timeout = 5000): Promise<string | null> {
+    async readLine(timeout = 1000): Promise<string | null> {
         if (this.buffer.hasLine()) {
             return this.buffer.getLine()
         }

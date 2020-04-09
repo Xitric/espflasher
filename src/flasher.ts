@@ -15,9 +15,16 @@ export async function reboot() {
     const terminal = getFlasherTerminal()
     terminal.show()
 
-    await serial.reboot(conf.port, conf.device, message => {
-        terminal.sendText(`echo '${message}'`)
-    })
+    try {
+        await serial.reboot(conf.port, conf.device, message => {
+            terminal.sendText(`echo '${message}'`)
+        })
+    } catch (error) {
+        vscode.window.showErrorMessage(`An error occurred while rebooting the device: ${error}`)
+        return
+    }
+
+    vscode.window.showInformationMessage('Successfully rebooted')
 }
 
 export async function flashWorkspace() {
